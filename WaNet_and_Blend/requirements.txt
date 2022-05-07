@@ -1,0 +1,13 @@
+numpy
+opencv_contrib_python
+matplotlib
+Pillow
+torch
+torchvision
+tensorboard
+tensorboardX
+opencv-python
+urllib3
+scipy
+requests-unixsocket
+
