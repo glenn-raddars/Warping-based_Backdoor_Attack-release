@@ -67,6 +67,7 @@ def  train(netC, optimizerC, schedulerC, train_dl, noise_grid, identity_grid, tf
 
         inputs, targets = inputs.to(opt.device), targets.to(opt.device)
         bs = inputs.shape[0]
+        print(bs)
 
         # Create backdoor data
         num_bd = int(bs * rate_bd)
@@ -90,12 +91,19 @@ def  train(netC, optimizerC, schedulerC, train_dl, noise_grid, identity_grid, tf
         patten = cv2.resize(cv2.imread('./img/dot.jpg', 0), (28, 28)).reshape(1, 28, 28).astype(np.float32) / 255
         patten = torch.tensor(patten)
         patten = patten.to(opt.device)
-        for i in range(inputs_bd.shape[0]):
+        # print(int(inputs_bd.shape[0]*(3/5)))
+        num_W_B = int(inputs_bd.shape[0]*(3/5))#既有WaNet，又有Blending的输入
+        for i in range(num_W_B):
             inputs_bd[i][0] = inputs_bd[i][0]*(1 - 0.2) + patten*0.2
+
+        if opt.attack_mode == "all2one":
+            targets_W_B = torch.ones_like(targets[:num_W_B]) * opt.target_label
+        if opt.attack_mode == "all2all":
+            targets_W_B = torch.remainder(targets[:num_W_B]+2, opt.num_classes)# 这个时候就让target_W_B在加2
 
         total_inputs = torch.cat([inputs_bd, inputs_cross, inputs[(num_bd + num_cross) :]], dim=0)
         total_inputs = transforms(total_inputs)#这就是对图像进行裁剪
-        total_targets = torch.cat([targets_bd, targets[num_bd:]], dim=0)
+        total_targets = torch.cat([targets_W_B ,targets_bd[num_W_B:], targets[num_bd:]], dim=0)# 拼接target
         start = time()
         total_preds = netC(total_inputs)
         total_time += time() - start#训练时间
